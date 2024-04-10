@@ -1,0 +1,123 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Cargar datos de paradas de TransMilenio
+paradas_tm = pd.read_csv("https://www.transmilenio.gov.co/", sep=",")
+
+# Cargar datos de rutas de TransMilenio
+rutas_tm = pd.read_csv("https://www.transmilenio.gov.co/", sep=",")
+
+# Cargar datos de viajes de TransMilenio
+viajes_tm = pd.read_csv("https://www.transmilenio.gov.co/publicaciones/149036/mi-plan-viaje-de-transmilenio/", sep="," 
+
+# Cargar datos de estaciones de TransMilenio
+estaciones = pd.read_csv("https://www.transmilenio.gov.co/")
+
+# Cargar datos de viajes de TransMilenio
+viajes = pd.read_csv("https://www.transmilenio.gov.co/publicaciones/149036/mi-plan-viaje-de-transmilenio/")
+
+
+                        # Eliminar filas con valores NaN
+                        paradas_tm.dropna(inplace=True)
+                        rutas_tm.dropna(inplace=True)
+                        viajes_tm.dropna(inplace=True)
+
+                        # Convertir columnas a tipos de datos adecuados
+                        paradas_tm["latitud"] = pd.to_numeric(paradas_tm["latitud"])
+                        paradas_tm["longitud"] = pd.to_numeric(paradas_tm["longitud"])
+
+
+# Mostrar información general de las paradas
+print(paradas_tm.info())
+
+# Calcular la cantidad de viajes por ruta
+viajes_por_ruta = viajes_tm.groupby("ruta_id").size()
+
+# Visualizar la distribución de los tiempos de viaje
+plt.hist(viajes_tm["duracion_viaje"])
+plt.show()
+
+# Número de estaciones
+print(f"Número de estaciones: {estaciones.shape[0]}")
+
+# Número de viajes
+print(f"Número de viajes: {viajes.shape[0]}")
+
+# Destinos más populares
+destinos_populares = viajes["destino"].value_counts().sort_values(ascending=False)[:10]
+print(f"Destinos más populares: {destinos_populares}")
+
+# Visualizar las paradas de TransMilenio en un mapa
+plt.scatter(paradas_tm["longitud"], paradas_tm["latitud"])
+plt.show()
+
+# Calcular la distancia entre dos paradas
+def distancia_euclidiana(p1, p2):
+  return np.sqrt(((p1[0] - p2[0])**2) + ((p1[1] - p2[1])**2))
+
+# Encontrar la parada más cercana a una coordenada
+def encontrar_parada_cercana(coordenada):
+  distancias = []
+  for parada in paradas_tm.itertuples():
+    distancia = distancia_euclidiana(coordenada, (parada.longitud, parada.latitud))
+    distancias.append(distancia)
+  return paradas_tm.iloc[np.argmin(distancias)]
+
+
+# Mapa de estaciones
+plt.scatter(estaciones["longitud"], estaciones["latitud"])
+plt.xlabel("Longitud")
+plt.ylabel("Latitud")
+plt.show()
+
+# Gráfico de afluencia por hora
+viajes["hora"] = pd.to_datetime(viajes["hora"])
+viajes_por_hora = viajes.groupby("hora").size()
+plt.plot(viajes_por_hora.index, viajes_por_hora.values)
+plt.xlabel("Hora")
+plt.ylabel("Afluencia")
+plt.show()
+
+# Visualizar la evolución del número de viajes por año
+viajes_por_año = viajes_tm.groupby("fecha_viaje").size().to_frame()
+plt.plot(viajes_por_año.index, viajes_por_año["fecha_viaje"])
+plt.show()
+
+# Identificar los días con mayor afluencia de pasajeros
+viajes_por_dia = viajes_tm.groupby("dia_semana").size().to_frame()
+dia_mayor_afluencia = viajes_por_dia.sort_values("dia_semana", ascending=False).index[0]
+# Regresión lineal para predecir la duración del viaje
+from sklearn.linear_model import LinearRegression
+
+# Seleccionar variables
+X = viajes[["origen", "destino", "hora"]]
+y = viajes["duracion"]
+
+# Entrenar el modelo
+modelo = LinearRegression()
+modelo.fit(X, y)
+
+# Predecir la duración de un viaje
+nuevo_viaje = pd.DataFrame({"origen": "Estación A", "destino": "Estación B", "hora": "10:00"})
+prediccion = modelo.predict(nuevo_viaje)
+
+print(f"Predicción de la duración del viaje: {prediccion[0]} minutos")
+
+# Entrenar un modelo para predecir la duración de un viaje
+from sklearn.linear_model import LinearRegression
+
+# Seleccionar variables features
+features = ["dia_semana", "hora_viaje", "origen_id", "destino_id"]
+
+# Preparar datos de entrenamiento
+X = viajes_tm[features]
+y = viajes_tm["duracion_viaje"]
+
+# Entrenar el modelo
+modelo = LinearRegression()
+modelo.fit(X, y)
+
+# Predecir la duración de un nuevo viaje
+nuevo_viaje = {"dia_semana": 1, "hora_viaje": 12, "origen_id": 100, "destino_id": 200}
+prediccion = modelo.predict(pd.DataFrame(nuevo_viaje))
